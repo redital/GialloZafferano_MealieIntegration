@@ -28,7 +28,7 @@ def loadUrlsFile():
     return currentUrls
 
 
-def saveRecipe(linkRecipeToDownload):
+def saveRecipe(linkRecipeToDownload) -> ModelRecipe:
     soup = downloadPage(linkRecipeToDownload)
     title = findTitle(soup)
 
@@ -66,6 +66,8 @@ def saveRecipe(linkRecipeToDownload):
     modelRecipe.jsonld = jsonld
 
     createFileJson(modelRecipe.toDictionary(), filePath)
+
+    return modelRecipe
 
 
 def findTitle(soup):
