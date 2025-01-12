@@ -65,7 +65,7 @@ def saveRecipe(linkRecipeToDownload) -> ModelRecipe:
     modelRecipe.lactoseFree = other["lactoseFree"]
     modelRecipe.jsonld = jsonld
 
-    createFileJson(modelRecipe.toDictionary(), filePath)
+    #createFileJson(modelRecipe.toDictionary(), filePath)
 
     return modelRecipe
 
