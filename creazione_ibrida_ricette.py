@@ -11,7 +11,7 @@
 # Faccio una PATCH dee feature interessate
 
 from ModelRecipeToAPIRecipeConverter import convert_model_recipe_to_recipe
-from main import saveRecipe
+from GialloZafferanoScraper.main import saveRecipe
 from MealieAPI import recipe 
 
 def creazione_ibrida_ricette(url, ingredients = True, category = True, tags = True, ):

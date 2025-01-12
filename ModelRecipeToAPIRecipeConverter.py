@@ -1,4 +1,4 @@
-from ModelRecipe import ModelRecipe
+from GialloZafferanoScraper.ModelRecipe import ModelRecipe
 from MealieAPI.models import *
 from MealieAPI import unit, food, tag, category
 import uuid

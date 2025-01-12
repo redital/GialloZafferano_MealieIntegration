@@ -1,3 +1,5 @@
+import json
+
 class ModelRecipe:
     imageBase64 = ""
     title = ""
@@ -38,3 +40,27 @@ class ModelRecipe:
             "jsonld": self.jsonld,
         }
         return recipe
+
+def convert_json_to_model_recipe(json_string: str) -> ModelRecipe:
+    data = json.loads(json_string)
+    recipe = ModelRecipe()
+    
+    recipe.imageBase64 = data.get("imageBase64", "")
+    recipe.title = data.get("title", "")
+    recipe.link = data.get("link", "")
+    recipe.category = data.get("category", "")
+    recipe.description = data.get("description", "")
+    recipe.ingredients = data.get("ingredients", [])
+    recipe.difficulty = data.get("difficulty", "")
+    recipe.preparationTime = data.get("preparationTime", "")
+    recipe.cookingTime = data.get("cookingTime", "")
+    recipe.servings = data.get("servings", "")
+    recipe.price = data.get("price", "")
+    recipe.notes = data.get("notes", "")
+    recipe.nutritionals = data.get("nutritionals", {})
+    recipe.calories = data.get("calories", "")
+    recipe.vegetarian = data.get("vegetarian", False)
+    recipe.lactoseFree = data.get("lactoseFree", False)
+    recipe.jsonld = data.get("jsonld", "")
+
+    return recipe

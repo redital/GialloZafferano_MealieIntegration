@@ -8,7 +8,7 @@ import re
 # import string
 from string import digits
 import json
-from ModelRecipe import ModelRecipe
+from GialloZafferanoScraper.ModelRecipe import ModelRecipe
 import os
 import base64
 from tqdm import tqdm
