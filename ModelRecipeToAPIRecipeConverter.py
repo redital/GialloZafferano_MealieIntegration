@@ -48,7 +48,7 @@ def convert_model_recipe_to_recipe(model_recipe: ModelRecipe) -> Recipe:
     # Mappiamo gli ingredienti
     recipe_ingredients = [
         RecipeIngredient(
-            quantity=float(item["quantity"].split()[-2].replace(",", ".")) if "q.b." not in item["quantity"] else 0.0,  # Assumendo che il formato sia "100 g" o simili
+            quantity=quantity_parser(item["quantity"]),  # Assumendo che il formato sia "100 g" o simili
             unit=ingredient_unit,
             food=ingredient_food,
             note=item["quantity"].split("(")[-1].split(")")[0] if len(item["quantity"].split("(")) > 1 else "",
@@ -156,3 +156,14 @@ def convert_model_recipe_to_recipe(model_recipe: ModelRecipe) -> Recipe:
         extras={},
         comments=[]
     )
+
+import unicodedata
+
+def quantity_parser(text):
+    if "q.b." in text:
+        return 0.0
+    if len(text.split()) == 1:
+        try: return float(text.replace(",", "."))
+        except: return unicodedata.numeric(text.replace(",", "."))
+    try: return float(text.split()[-2].replace(",", "."))
+    except: return unicodedata.numeric(text.split()[-2].replace(",", "."))
