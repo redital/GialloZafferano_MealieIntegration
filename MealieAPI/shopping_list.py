@@ -1,5 +1,4 @@
 import requests
-import json
 from MealieAPI.base import * 
 
 base_url = "/api/groups/shopping/lists"
