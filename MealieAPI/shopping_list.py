@@ -82,7 +82,7 @@ def delete_all_shopping_lists(api_url=mealie_url, token=api_token):
     recipe_list = get_all_shopping_lists(api_url=api_url, token=token)
 
     for i in recipe_list:
-        delete_shopping_list(i.id)
+        delete_shopping_list(i["id"])
 
 
 def empty_list(item_id, api_url=mealie_url, token=api_token):
