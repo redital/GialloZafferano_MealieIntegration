@@ -14,12 +14,10 @@ import uuid
 # Per tag e category faccio come per le unità
 # Infine creiamo effettivamente l'oggetto di tipo recipe   
 
-
-def convert_model_recipe_to_recipe(model_recipe: ModelRecipe) -> Recipe:
-    # Recupero le Unit
+def compute_unit_list(ingredients):
     unit_list = []
-    for item in model_recipe.ingredients:
-        if "q.b." in item["quantity"]:
+    for item in ingredients:
+        if "q.b." in item["quantity"] or len(item["quantity"].split()) == 1:
             unit_list.append(None)
             continue
         unit_name = item["quantity"].split()[-1] 
@@ -30,11 +28,11 @@ def convert_model_recipe_to_recipe(model_recipe: ModelRecipe) -> Recipe:
         else:
             current_unit = unit.create_unit(unit_name)
             unit_list.append(current_unit)
+    return unit_list
 
-            
-    # Recupero i Food
+def compute_food_list(ingredients):
     food_list = []
-    for item in model_recipe.ingredients:
+    for item in ingredients:
         food_name = item["name"]
         search_res = food.search_food(food_name)
         if len(search_res)>0:
@@ -43,6 +41,41 @@ def convert_model_recipe_to_recipe(model_recipe: ModelRecipe) -> Recipe:
         else:
             current_food = food.create_food(food_name)
             food_list.append(current_food)
+    return food_list
+
+def compute_tag_list(keywords):
+    tag_list = []
+    for tag_name in keywords:
+        search_res = tag.search_tag(tag_name)
+        if len(search_res)>0:
+            current_tag = search_res[0]
+            tag_list.append(current_tag)
+        else:
+            current_tag = tag.create_tag(tag_name)
+            tag_list.append(current_tag)
+    return tag_list
+
+def compute_category_list(category_text):
+    category_list = []
+    for category_name in [category_text]:
+        if not category_text:
+            category_list.append(None)
+        search_res = category.search_category(category_name)
+        if len(search_res)>0:
+            current_category = search_res[0]
+            category_list.append(current_category)
+        else:
+            current_category = category.create_category(category_name)
+            category_list.append(current_category)
+    return category_list
+
+
+def convert_model_recipe_to_recipe(model_recipe: ModelRecipe) -> Recipe:
+    # Recupero le Unit
+    unit_list = compute_unit_list(model_recipe.ingredients)
+
+    # Recupero i Food
+    food_list = compute_food_list(model_recipe.ingredients)
 
 
     # Mappiamo gli ingredienti
@@ -96,31 +129,13 @@ def convert_model_recipe_to_recipe(model_recipe: ModelRecipe) -> Recipe:
 
             
     # Recupero i Tag
-    tag_list = []
-    for tag_name in model_recipe.jsonld["keywords"].split(", "):
-        search_res = tag.search_tag(tag_name)
-        if len(search_res)>0:
-            current_tag = search_res[0]
-            tag_list.append(current_tag)
-        else:
-            current_tag = tag.create_tag(tag_name)
-            tag_list.append(current_tag)
+    tag_list = compute_tag_list(model_recipe.jsonld["keywords"].split(", "))
 
         
+    # Recupero i Category
     if not model_recipe.category:
         model_recipe.category = model_recipe.jsonld["recipeCategory"]
-    # Recupero i Category
-    category_list = []
-    for category_name in [model_recipe.category]:
-        if not model_recipe.category:
-            category_list.append(None)
-        search_res = category.search_category(category_name)
-        if len(search_res)>0:
-            current_category = search_res[0]
-            category_list.append(current_category)
-        else:
-            current_category = category.create_category(category_name)
-            category_list.append(current_category)
+    category_list = compute_category_list(model_recipe.category)
 
 
     # Creiamo l'oggetto Recipe con i valori aggiuntivi dal dizionario
