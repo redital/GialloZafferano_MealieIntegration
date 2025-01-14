@@ -2,6 +2,9 @@ from GialloZafferanoScraper.ModelRecipe import ModelRecipe
 from MealieAPI.models import *
 from MealieAPI import unit, food, tag, category
 import uuid
+from thefuzz import fuzz
+
+soglia_fuzzy_matching = 75
 
 # Prendo il ModelRecipe
 # Recupero dagli ingredienti del ModelRecipe le unità
@@ -17,14 +20,23 @@ import uuid
 def compute_unit_list(ingredients):
     unit_list = []
     for item in ingredients:
-        if "q.b." in item["quantity"] or len(item["quantity"].split()) == 1:
+        if quantity_parser(item["quantity"])["unit"] == None:
+            unit_list.append(None)
+        if len(item["quantity"].split()) == 1:
             unit_list.append(None)
             continue
         unit_name = item["quantity"].split()[-1] 
         search_res = unit.search_unit(unit_name)
         if len(search_res)>0:
-            current_unit = search_res[0]
-            unit_list.append(current_unit)
+            score_dict = [{"item":i, "score":fuzz.ratio(unit_name, i.name)} for i in search_res]
+            print(score_dict)
+            best_res = [i["item"] for i in score_dict if i["score"] == max([i["score"] for i in score_dict])][0]
+            if max([i["score"] for i in score_dict]) > soglia_fuzzy_matching:
+                current_unit = best_res
+                unit_list.append(current_unit)
+            else:
+                current_unit = unit.create_unit(unit_name)
+                unit_list.append(current_unit)
         else:
             current_unit = unit.create_unit(unit_name)
             unit_list.append(current_unit)
@@ -36,8 +48,15 @@ def compute_food_list(ingredients):
         food_name = item["name"]
         search_res = food.search_food(food_name)
         if len(search_res)>0:
-            current_food = search_res[0]
-            food_list.append(current_food)
+            score_dict = [{"item":i, "score":fuzz.ratio(food_name, i.name)} for i in search_res]
+            print(score_dict)
+            best_res = [i["item"] for i in score_dict if i["score"] == max([i["score"] for i in score_dict])][0]
+            if max([i["score"] for i in score_dict]) > soglia_fuzzy_matching:
+                current_food = best_res
+                food_list.append(current_food)
+            else:
+                current_food = food.create_food(food_name)
+                food_list.append(current_food)
         else:
             current_food = food.create_food(food_name)
             food_list.append(current_food)
@@ -48,6 +67,15 @@ def compute_tag_list(keywords):
     for tag_name in keywords:
         search_res = tag.search_tag(tag_name)
         if len(search_res)>0:
+            score_dict = [{"item":i, "score":fuzz.ratio(tag_name, i.name)} for i in search_res]
+            print(score_dict)
+            best_res = [i["item"] for i in score_dict if i["score"] == max([i["score"] for i in score_dict])][0]
+            if max([i["score"] for i in score_dict]) > soglia_fuzzy_matching:
+                current_unit = best_res
+                tag_list.append(current_unit)
+            else:
+                current_unit = tag.create_tag(tag_name)
+                tag_list.append(current_unit)
             current_tag = search_res[0]
             tag_list.append(current_tag)
         else:
@@ -62,6 +90,15 @@ def compute_category_list(category_text):
             category_list.append(None)
         search_res = category.search_category(category_name)
         if len(search_res)>0:
+            score_dict = [{"item":i, "score":fuzz.ratio(category_name, i.name)} for i in search_res]
+            print(score_dict)
+            best_res = [i["item"] for i in score_dict if i["score"] == max([i["score"] for i in score_dict])][0]
+            if max([i["score"] for i in score_dict]) > soglia_fuzzy_matching:
+                current_unit = best_res
+                category_list.append(current_unit)
+            else:
+                current_unit = category.create_category(category_name)
+                category_list.append(current_unit)
             current_category = search_res[0]
             category_list.append(current_category)
         else:
@@ -81,7 +118,7 @@ def convert_model_recipe_to_recipe(model_recipe: ModelRecipe) -> Recipe:
     # Mappiamo gli ingredienti
     recipe_ingredients = [
         RecipeIngredient(
-            quantity=quantity_parser(item["quantity"]),  # Assumendo che il formato sia "100 g" o simili
+            quantity=quantity_parser(item["quantity"])["number"],  # Assumendo che il formato sia "100 g" o simili
             unit=ingredient_unit,
             food=ingredient_food,
             note=item["quantity"].split("(")[-1].split(")")[0] if len(item["quantity"].split("(")) > 1 else "",
@@ -176,9 +213,17 @@ import unicodedata
 
 def quantity_parser(text):
     if "q.b." in text:
-        return 0.0
+        return {"number":None,"unit":None}
+    numeric_indexes = [i for i,t in enumerate(text.split()) if t.isnumeric()]
+    if len(numeric_indexes) == 0:
+        return {"number":None,"unit":text}
+    text = " ".join(text.split()[numeric_indexes[0]:])
+    number = None
     if len(text.split()) == 1:
-        try: return float(text.replace(",", "."))
-        except: return unicodedata.numeric(text.replace(",", "."))
-    try: return float(text.split()[-2].replace(",", "."))
-    except: return unicodedata.numeric(text.split()[-2].replace(",", "."))
+        try: 
+            number = float(text.replace(",", "."))
+        except: number = unicodedata.numeric(text.replace(",", "."))
+        return {"number":number,"unit":None}
+    try: number = float(text.split()[0].replace(",", "."))
+    except: number = unicodedata.numeric(text.split()[0].replace(",", "."))
+    return {"number":number,"unit":" ".join(text.split()[1:])}
