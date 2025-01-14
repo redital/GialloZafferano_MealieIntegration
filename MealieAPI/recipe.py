@@ -80,7 +80,7 @@ def delete_recipe(slug, api_url=mealie_url, token=api_token):
         )
 
 
-def create_recipe(recipe_name, api_url=mealie_url, token=api_token):
+def create_recipe(recipe_name, api_url=mealie_url, token=api_token, delete_if_duplicate = False):
     headers = get_headers(token)
     data = {"name": recipe_name}
 
@@ -96,13 +96,23 @@ def create_recipe(recipe_name, api_url=mealie_url, token=api_token):
                 response.status_code, response.json()
             )
         )
-        return response.json()
     else:
         print(
             "\nErrore in fase di creazione! - Status Code: {}, Response: {}".format(
                 response.status_code, response.text
             )
         )
+
+    slug = response.json()
+
+    if slug[-1].isdigit():
+        print(
+            "\nAttenzione questa ricetta sembrerebbe essere un duplicato! Ti consiglio di andare a controllare"
+        )
+        if delete_if_duplicate:
+            delete_recipe(slug=slug, api_url=api_url, token=token)
+
+    return slug
 
 
 def populate_recipe(recipe, slug, api_url=mealie_url, token=api_token, delete_if_failed=False):
@@ -126,7 +136,7 @@ def populate_recipe(recipe, slug, api_url=mealie_url, token=api_token, delete_if
             delete_recipe(slug, api_url, api_token)
 
 
-def create_recipe_from_url(url, include_tags=False, api_url=mealie_url, token=api_token):
+def create_recipe_from_url(url, include_tags=False, api_url=mealie_url, token=api_token, delete_if_duplicate = False):
     data = {"url": url, "include_tags": include_tags}
     headers = get_headers(token)
 
@@ -156,6 +166,8 @@ def create_recipe_from_url(url, include_tags=False, api_url=mealie_url, token=ap
         print(
             "\nAttenzione questa ricetta sembrerebbe essere un duplicato! Ti consiglio di andare a controllare"
         )
+        if delete_if_duplicate:
+            delete_recipe(slug=slug, api_url=api_url, token=token)
 
     return slug
 
