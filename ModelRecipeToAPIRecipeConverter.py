@@ -20,16 +20,17 @@ soglia_fuzzy_matching = 75
 def compute_unit_list(ingredients):
     unit_list = []
     for item in ingredients:
-        if quantity_parser(item["quantity"])["unit"] == None:
+        text = quantity_parser(item["quantity"])["unit"]
+        if text == None:
             unit_list.append(None)
+            continue
         if len(item["quantity"].split()) == 1:
             unit_list.append(None)
             continue
-        unit_name = item["quantity"].split()[-1] 
+        unit_name = text
         search_res = unit.search_unit(unit_name)
         if len(search_res)>0:
             score_dict = [{"item":i, "score":fuzz.ratio(unit_name, i.name)} for i in search_res]
-            print(score_dict)
             best_res = [i["item"] for i in score_dict if i["score"] == max([i["score"] for i in score_dict])][0]
             if max([i["score"] for i in score_dict]) > soglia_fuzzy_matching:
                 current_unit = best_res
@@ -49,7 +50,6 @@ def compute_food_list(ingredients):
         search_res = food.search_food(food_name)
         if len(search_res)>0:
             score_dict = [{"item":i, "score":fuzz.ratio(food_name, i.name)} for i in search_res]
-            print(score_dict)
             best_res = [i["item"] for i in score_dict if i["score"] == max([i["score"] for i in score_dict])][0]
             if max([i["score"] for i in score_dict]) > soglia_fuzzy_matching:
                 current_food = best_res
@@ -68,7 +68,6 @@ def compute_tag_list(keywords):
         search_res = tag.search_tag(tag_name)
         if len(search_res)>0:
             score_dict = [{"item":i, "score":fuzz.ratio(tag_name, i.name)} for i in search_res]
-            print(score_dict)
             best_res = [i["item"] for i in score_dict if i["score"] == max([i["score"] for i in score_dict])][0]
             if max([i["score"] for i in score_dict]) > soglia_fuzzy_matching:
                 current_unit = best_res
@@ -91,7 +90,6 @@ def compute_category_list(category_text):
         search_res = category.search_category(category_name)
         if len(search_res)>0:
             score_dict = [{"item":i, "score":fuzz.ratio(category_name, i.name)} for i in search_res]
-            print(score_dict)
             best_res = [i["item"] for i in score_dict if i["score"] == max([i["score"] for i in score_dict])][0]
             if max([i["score"] for i in score_dict]) > soglia_fuzzy_matching:
                 current_unit = best_res
@@ -108,6 +106,9 @@ def compute_category_list(category_text):
 
 
 def convert_model_recipe_to_recipe(model_recipe: ModelRecipe) -> Recipe:
+    if isinstance(model_recipe.jsonld, list):
+        model_recipe.jsonld=model_recipe.jsonld[0]
+    
     # Recupero le Unit
     unit_list = compute_unit_list(model_recipe.ingredients)
 
@@ -192,7 +193,7 @@ def convert_model_recipe_to_recipe(model_recipe: ModelRecipe) -> Recipe:
         recipeCategory=category_list,
         tags=tag_list,
         tools=[],  # Popolare se i tools sono disponibili
-        rating=int(model_recipe.jsonld["aggregateRating"]["ratingValue"]),
+        rating=int(model_recipe.jsonld["aggregateRating"]["ratingValue"]) if "aggregateRating" in model_recipe.jsonld.keys() else 0,
         orgURL=model_recipe.link,
         dateAdded="2025-01-10",
         dateUpdated="2025-01-10",
@@ -214,7 +215,10 @@ import unicodedata
 def quantity_parser(text):
     if "q.b." in text:
         return {"number":None,"unit":None}
-    numeric_indexes = [i for i,t in enumerate(text.split()) if t.isnumeric()]
+    if text.find(")")>0:
+        tra_parentesi = text[text.find("("):text.find(")")+1]
+        text = text.replace(tra_parentesi,"")
+    numeric_indexes = [i for i,t in enumerate(text.split()) if is_number(t)]
     if len(numeric_indexes) == 0:
         return {"number":None,"unit":text}
     text = " ".join(text.split()[numeric_indexes[0]:])
@@ -227,3 +231,10 @@ def quantity_parser(text):
     try: number = float(text.split()[0].replace(",", "."))
     except: number = unicodedata.numeric(text.split()[0].replace(",", "."))
     return {"number":number,"unit":" ".join(text.split()[1:])}
+
+def is_number(string):
+    try: 
+        float(string.replace(",","."))
+        return True
+    except:
+        return False
